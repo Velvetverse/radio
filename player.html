@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>VelvetVerse Radio</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#000;
+display:flex;
+align-items:center;
+justify-content:center;
+height:100vh;
+overflow:hidden;
+}
+
+/* 🔥 PLAYER BASE */
+.box{
+width:100%;
+max-width:900px;
+display:flex;
+align-items:center;
+gap:15px;
+padding:18px;
+box-sizing:border-box;
+border-radius:14px;
+position:relative;
+overflow:hidden;
+background:rgba(10,10,10,0.85);
+backdrop-filter:blur(10px);
+}
+
+/* 🌈 NEON BORDER (OFF DEFAULT) */
+.box::before{
+content:"";
+position:absolute;
+inset:0;
+padding:2px;
+border-radius:14px;
+background:linear-gradient(90deg,purple,red,purple);
+background-size:300% 300%;
+animation:none;
+-webkit-mask:
+linear-gradient(#000 0 0) content-box,
+linear-gradient(#000 0 0);
+-webkit-mask-composite:xor;
+mask-composite:exclude;
+pointer-events:none;
+}
+
+.box.playing::before{
+animation:borderMove 6s linear infinite;
+}
+
+@keyframes borderMove{
+0%{background-position:0% 50%;}
+50%{background-position:100% 50%;}
+100%{background-position:0% 50%;}
+}
+
+/* 🌫 GLOW BACKGROUND */
+.glow{
+position:absolute;
+inset:-60%;
+background:radial-gradient(circle,purple,transparent 60%),
+radial-gradient(circle,red,transparent 60%);
+filter:blur(90px);
+opacity:0.25;
+animation:glowMove 8s infinite alternate;
+z-index:0;
+}
+
+@keyframes glowMove{
+0%{transform:translate(-20%,-10%);}
+100%{transform:translate(20%,10%);}
+}
+
+/* CONTENT */
+.content{
+display:flex;
+align-items:center;
+gap:15px;
+position:relative;
+z-index:1;
+width:100%;
+}
+
+/* COVER */
+img{
+width:80px;
+height:80px;
+border-radius:10px;
+object-fit:cover;
+animation:breathe 4s infinite ease-in-out;
+}
+
+@keyframes breathe{
+0%{transform:scale(1);}
+50%{transform:scale(1.08);}
+100%{transform:scale(1);}
+}
+
+/* NEON TITLE */
+.neon{
+font-size:24px;
+font-weight:bold;
+color:#c084fc;
+text-shadow:0 0 8px #a855f7,0 0 20px #7c3aed;
+}
+
+/* LIVE */
+.live{
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+margin-bottom:5px;
+}
+
+.dot{
+width:10px;
+height:10px;
+border-radius:50%;
+background:red;
+animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+0%{transform:scale(1);opacity:1;}
+50%{transform:scale(1.4);opacity:0.6;}
+100%{transform:scale(1);opacity:1;}
+}
+
+/* EQ */
+.eq{
+display:flex;
+gap:3px;
+align-items:flex-end;
+height:20px;
+margin-top:6px;
+}
+
+.eq div{
+width:4px;
+background:linear-gradient(purple,red);
+animation:eqAnim 1s infinite ease-in-out;
+}
+
+.eq div:nth-child(2){animation-delay:0.1s;}
+.eq div:nth-child(3){animation-delay:0.2s;}
+.eq div:nth-child(4){animation-delay:0.3s;}
+.eq div:nth-child(5){animation-delay:0.4s;}
+
+@keyframes eqAnim{
+0%,100%{height:5px;}
+50%{height:20px;}
+}
+
+/* CONTROLS */
+.controls{
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
+input[type=range]{
+width:120px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<div class="glow"></div>
+
+<div class="content">
+
+<!-- COVER -->
+<img id="cover" src="cover.png">
+
+<!-- INFO -->
+<div style="flex:1;">
+
+<div class="live">
+<div id="dot" class="dot"></div>
+<span style="color:white;">LIVE</span>
+</div>
+
+<div class="neon">VelvetVerse Radio</div>
+
+<div id="title" style="font-size:16px;font-weight:bold;margin-top:4px;">
+A carregar...
+</div>
+
+<!-- EQ -->
+<div class="eq">
+<div></div><div></div><div></div><div></div><div></div>
+</div>
+
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+
+<button onclick="toggle()" style="padding:8px 12px;">▶ / ⏸</button>
+
+<input type="range" min="0" max="1" step="0.01" value="1" oninput="setVolume(this.value)">
+
+</div>
+
+</div>
+</div>
+
+<!-- AUDIO -->
+<audio id="radio">
+<source src="http://live3.rcast.net:8116/stream" type="audio/mpeg">
+</audio>
+
+<script>
+const audio = document.getElementById("radio");
+const dot = document.getElementById("dot");
+const box = document.querySelector(".box");
+
+// PLAY / PAUSE
+function toggle(){
+if(audio.paused){
+audio.play();
+dot.style.background="lime";
+box.classList.add("playing");
+} else {
+audio.pause();
+dot.style.background="red";
+box.classList.remove("playing");
+}
+}
+
+// VOLUME
+function setVolume(v){
+audio.volume = v;
+}
+
+// STATUS AUTO
+audio.addEventListener("play", ()=>{
+dot.style.background="lime";
+box.classList.add("playing");
+});
+
+audio.addEventListener("pause", ()=>{
+dot.style.background="red";
+box.classList.remove("playing");
+});
+
+// NOW PLAYING + COVER
+async function update(){
+try{
+let r = await fetch("nowplaying.txt?t="+Date.now());
+let t = await r.text();
+document.getElementById("title").innerText = t;
+
+document.getElementById("cover").src =
+"cover.png?t="+Date.now();
+
+}catch(e){}
+}
+
+setInterval(update,3000);
+update();
+</script>
+
+</body>
+</html>
