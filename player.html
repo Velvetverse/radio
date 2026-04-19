@@ -213,24 +213,32 @@ box.classList.remove("playing");
 
 // update nowplaying + cover
 async function update(){
+
 try{
-let r = await fetch("nowplaying.txt?t=" + Date.now());
-let t = await r.text();
 
-document.getElementById("title").innerText = t;
+// tentar ler metadata via proxy público
+let url = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://stream3.rcast.net/73595");
 
-// separar
-let parts = t.split("-");
+let r = await fetch(url);
+let text = await r.text();
+
+// fallback simples
+let title = text.substring(0,100);
+
+document.getElementById("title").innerText = title;
+
+// tentar extrair artista e música
+let parts = title.split("-");
 if(parts.length < 2) return;
 
 let artist = parts[0].trim();
 let track = parts[1].trim();
 
-// procurar capa
+// capa automática
 let search = encodeURIComponent(artist + " " + track);
-let url = "https://itunes.apple.com/search?term=" + search + "&limit=1";
+let api = "https://itunes.apple.com/search?term=" + search + "&limit=1";
 
-let res = await fetch(url);
+let res = await fetch(api);
 let data = await res.json();
 
 if(data.results && data.results.length > 0){
@@ -242,9 +250,10 @@ document.getElementById("cover").src = img;
 }catch(e){
 console.log(e);
 }
+
 }
 
-setInterval(update,4000);
+setInterval(update,5000);
 update();
 </script>
 
