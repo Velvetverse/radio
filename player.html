@@ -257,14 +257,37 @@ box.classList.remove("playing");
 // NOW PLAYING + COVER
 async function update(){
 try{
-let r = await fetch("nowplaying.txt?t="+Date.now());
+let r = await fetch("nowplaying.txt?t=" + Date.now());
 let t = await r.text();
+
 document.getElementById("title").innerText = t;
 
-document.getElementById("cover").src =
-"cover.png?t="+Date.now();
+// separar artista e musica
+let parts = t.split("-");
+let artist = (parts[0] || "").trim();
+let track = (parts[1] || "").trim();
+
+// procurar capa (iTunes API)
+let search = encodeURIComponent(artist + " " + track);
+let api = "https://itunes.apple.com/search?term=" + search + "&limit=1";
+
+let res = await fetch(api);
+let data = await res.json();
+
+if(data.results && data.results.length > 0){
+let artwork = data.results[0].artworkUrl100;
+
+// aumentar qualidade da imagem
+artwork = artwork.replace("100x100","500x500");
+
+document.getElementById("cover").src = artwork;
+}
 
 }catch(e){}
+}
+
+setInterval(update,3000);
+update();
 }
 
 setInterval(update,3000);
